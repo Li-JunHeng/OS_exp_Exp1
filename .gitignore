@@ -8,22 +8,6 @@ build/
 *.fst
 *.gtkw
 
-# Vivado generated project files
-.Xil/
-*.jou
-*.log
-*.str
-*.bit
-*.bin
-*.ltx
-*.runs/
-*.cache/
-*.hw/
-*.ip_user_files/
-*.sim/
-*.srcs/
-*.xpr
-
 # Local editor state
 .vscode/
 .idea/
