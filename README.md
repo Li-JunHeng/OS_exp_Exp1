@@ -42,6 +42,7 @@ This compiles the board-level `src/board/top.v` with the provided IO/IP stubs to
 - `src/io/` and `src/ip/` contain the provided IO and EDF submodules used when assembling the final `top.v`.
 - `src/board/top.v` is the board-level assembly file. It connects the completed CPU, instruction memory, data RAM, MIO bus, LED GPIO, counter, multi-channel display selector, and seven-segment display.
 - `scripts/vivado_sources.tcl` adds the intended Vivado source set. It deliberately excludes the provided `src/ip/SCPU.v`/`SCPU.edf` CPU black-box stub because this project uses the implemented `src/cpu/SCPU.v`.
+- `results/README.md` contains the fastest board bring-up flow. On a Vivado machine, enter `results/` and run `00_setup_project.bat`, `01_build_bitstream.bat`, then `02_program_board.bat`.
 
 ## Add More Cases
 
