@@ -52,6 +52,13 @@ CASES = [
         golden=ROOT / "tests" / "golden" / "rv32i_37_instr.txt",
         stop_pc="00000108",
         program_words=71,
+    ),
+    Case(
+        name="pipeline_hazards",
+        program=ROOT / "tests" / "programs" / "pipeline_hazards.dat",
+        golden=ROOT / "tests" / "golden" / "pipeline_hazards.txt",
+        stop_pc="0000002c",
+        program_words=19,
     )
 ]
 

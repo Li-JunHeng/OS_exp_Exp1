@@ -10,7 +10,14 @@ module smoke_tb();
    integer max_cycles;
    integer program_words;
    integer foutput;
+   integer drain_cycles;
+   integer drain_count;
+   integer stop_index;
+   reg stop_seen;
    reg [31:0] stop_pc;
+   reg [31:0] snapshot_pc;
+   reg [31:0] snapshot_instr;
+   reg [31:0] saved_stop_instr;
    reg [1023:0] program_path;
    reg [1023:0] output_path;
 
@@ -26,6 +33,8 @@ module smoke_tb();
       rstn = 1'b1;
       reg_sel = 5'd0;
       cycles = 0;
+      drain_count = 0;
+      stop_seen = 1'b0;
 
       if (!$value$plusargs("PROGRAM=%s", program_path))
          program_path = "tests/programs/rv32i_8_instr.dat";
@@ -37,9 +46,12 @@ module smoke_tb();
          max_cycles = 200;
       if (!$value$plusargs("PROGRAM_WORDS=%d", program_words))
          program_words = 15;
+      if (!$value$plusargs("DRAIN_CYCLES=%d", drain_cycles))
+         drain_cycles = 5;
 
       #1;
       $readmemh(program_path, U_SCCOMP.U_IM.ROM, 0, program_words - 1);
+      saved_stop_instr = U_SCCOMP.U_IM.ROM[stop_pc[11:2]];
       foutput = $fopen(output_path, "w");
       if (foutput == 0) begin
          $display("ASSESS_FAIL: cannot open output file");
@@ -59,6 +71,8 @@ module smoke_tb();
    always @(posedge clk) begin
       if (!rstn) begin
          cycles <= 0;
+         drain_count <= 0;
+         stop_seen <= 1'b0;
       end else begin
          cycles <= cycles + 1;
 
@@ -68,10 +82,30 @@ module smoke_tb();
             $fatal(1);
          end
 
-         if (U_SCCOMP.PC == stop_pc) begin
+         if (!stop_seen && U_SCCOMP.PC + 32'd4 == stop_pc)
+            U_SCCOMP.U_IM.ROM[stop_pc[11:2]] = 32'h0000_0013;
+
+         if (!stop_seen && U_SCCOMP.PC == stop_pc) begin
+            stop_seen <= 1'b1;
+            snapshot_pc <= U_SCCOMP.PC;
+            snapshot_instr <= saved_stop_instr;
+            drain_count <= 0;
+            U_SCCOMP.U_IM.ROM[stop_pc[11:2]] = 32'h0000_0013;
+         end else if (stop_seen && U_SCCOMP.U_SCPU.ex_take_branch) begin
+            stop_seen <= 1'b0;
+            drain_count <= 0;
+         end else if (stop_seen) begin
+            if (drain_count == 0) begin
+               for (stop_index = stop_pc[11:2] + 1; stop_index < stop_pc[11:2] + 8; stop_index = stop_index + 1)
+                  U_SCCOMP.U_IM.ROM[stop_index] = 32'h0000_0013;
+            end
+            drain_count <= drain_count + 1;
+         end
+
+         if (stop_seen && drain_count >= drain_cycles) begin
             dump_snapshot();
             $fclose(foutput);
-            $display("ASSESS_PASS: reached stop PC 0x%08h in %0d cycles", stop_pc, cycles);
+            $display("ASSESS_PASS: drained after stop PC 0x%08h in %0d cycles", stop_pc, cycles);
             $finish;
          end
 
@@ -85,8 +119,8 @@ module smoke_tb();
 
    task dump_snapshot;
       begin
-         $fdisplay(foutput, "pc:\t %h", U_SCCOMP.PC);
-         $fdisplay(foutput, "instr:\t\t %h", U_SCCOMP.instr);
+         $fdisplay(foutput, "pc:\t %h", snapshot_pc);
+         $fdisplay(foutput, "instr:\t\t %h", snapshot_instr);
          $fdisplay(foutput, "rf00-03:\t %h %h %h %h", 0, U_SCCOMP.U_SCPU.U_RF.rf[1], U_SCCOMP.U_SCPU.U_RF.rf[2], U_SCCOMP.U_SCPU.U_RF.rf[3]);
          $fdisplay(foutput, "rf04-07:\t %h %h %h %h", U_SCCOMP.U_SCPU.U_RF.rf[4], U_SCCOMP.U_SCPU.U_RF.rf[5], U_SCCOMP.U_SCPU.U_RF.rf[6], U_SCCOMP.U_SCPU.U_RF.rf[7]);
          $fdisplay(foutput, "rf08-11:\t %h %h %h %h", U_SCCOMP.U_SCPU.U_RF.rf[8], U_SCCOMP.U_SCPU.U_RF.rf[9], U_SCCOMP.U_SCPU.U_RF.rf[10], U_SCCOMP.U_SCPU.U_RF.rf[11]);
