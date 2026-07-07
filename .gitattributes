@@ -1,0 +1,18 @@
+* text=auto
+
+*.v text eol=lf
+*.V text eol=lf
+*.sv text eol=lf
+*.xdc text eol=lf
+*.coe text eol=lf
+*.dat text eol=lf
+*.txt text eol=lf
+Makefile text eol=lf
+
+*.edf binary
+*.pdf binary
+*.pptx binary
+*.docx binary
+*.png binary
+*.rar binary
+*.zip binary
