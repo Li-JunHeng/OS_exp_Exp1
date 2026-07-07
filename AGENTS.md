@@ -20,6 +20,7 @@ This repository contains the Verilog materials for the Exp1 CPU task.
 - `tests/` contains Icarus Verilog smoke tests and golden outputs.
 - `scripts/` contains local automation scripts.
 - `results/` is a self-contained Vivado/result subtree and may be a submodule; do not rewrite it unless the task explicitly targets it.
+- When parent-repo changes affect source, memory, constraints, or board behavior that is mirrored by `results/`, make the corresponding `results/` submodule update in the same workflow, commit/push the submodule first, then commit/push the parent repository's updated submodule pointer.
 
 ## Working Agreements
 
@@ -29,6 +30,7 @@ This repository contains the Verilog materials for the Exp1 CPU task.
 - Prefer deletion and simplification over adding new layers.
 - Do not add new dependencies unless explicitly requested.
 - Do not revert user changes. If the worktree is dirty, inspect relevant files and work with the existing changes.
+- Do not leave mirrored parent/submodule behavior out of sync; every parent change with a `results/` counterpart must be reflected in the submodule before publishing.
 - Write a cleanup plan before cleanup/refactor/deslop work.
 - Lock behavior with regression tests before cleanup edits when behavior is not already protected.
 - Final reports must include changed files, simplifications made, verification performed, and remaining risks when relevant.
