@@ -1,102 +1,115 @@
-// `include "ctrl_encode_def.v"
+`timescale 1ns / 1ps
+`include "ctrl_encode_def.v"
 
-//123
-module ctrl(Op, Funct7, Funct3, Zero, 
-            RegWrite, MemWrite,
-            EXTOp, ALUOp, NPCOp, 
-            ALUSrc, GPRSel, WDSel,DMType
-            );
-            
-   input  [6:0] Op;       // opcode
-   input  [6:0] Funct7;    // funct7
-   input  [2:0] Funct3;    // funct3
-   input        Zero;
-   
-   output       RegWrite; // control signal for register write
-   output       MemWrite; // control signal for memory write
-   output [5:0] EXTOp;    // control signal to signed extension
-   output [4:0] ALUOp;    // ALU opertion
-   output [2:0] NPCOp;    // next pc operation
-   output       ALUSrc;   // ALU source for A
-	output [2:0] DMType;
-   output [1:0] GPRSel;   // general purpose register selection
-   output [1:0] WDSel;    // (register) write data selection
-   
-  // r format
-    wire rtype  = ~Op[6]&Op[5]&Op[4]&~Op[3]&~Op[2]&Op[1]&Op[0]; //0110011
-    wire i_add  = rtype& ~Funct7[6]&~Funct7[5]&~Funct7[4]&~Funct7[3]&~Funct7[2]&~Funct7[1]&~Funct7[0]&~Funct3[2]&~Funct3[1]&~Funct3[0]; // add 0000000 000
-    wire i_sub  = rtype& ~Funct7[6]& Funct7[5]&~Funct7[4]&~Funct7[3]&~Funct7[2]&~Funct7[1]&~Funct7[0]&~Funct3[2]&~Funct3[1]&~Funct3[0]; // sub 0100000 000
-    wire i_or   = rtype& ~Funct7[6]&~Funct7[5]&~Funct7[4]&~Funct7[3]&~Funct7[2]&~Funct7[1]&~Funct7[0]& Funct3[2]& Funct3[1]&~Funct3[0]; // or 0000000 110
-    wire i_and  = rtype& ~Funct7[6]&~Funct7[5]&~Funct7[4]&~Funct7[3]&~Funct7[2]&~Funct7[1]&~Funct7[0]& Funct3[2]& Funct3[1]& Funct3[0]; // and 0000000 111
- 
+module ctrl(
+    input  [6:0] Op,
+    input  [6:0] Funct7,
+    input  [2:0] Funct3,
+    input        Zero,
+    output       RegWrite,
+    output       MemWrite,
+    output [5:0] EXTOp,
+    output [4:0] ALUOp,
+    output [2:0] NPCOp,
+    output       ALUSrc,
+    output [1:0] GPRSel,
+    output [1:0] WDSel,
+    output [2:0] DMType
+);
+    wire opcode_load   = (Op == 7'b0000011);
+    wire opcode_itype  = (Op == 7'b0010011);
+    wire opcode_auipc  = (Op == 7'b0010111);
+    wire opcode_store  = (Op == 7'b0100011);
+    wire opcode_rtype  = (Op == 7'b0110011);
+    wire opcode_lui    = (Op == 7'b0110111);
+    wire opcode_branch = (Op == 7'b1100011);
+    wire opcode_jalr   = (Op == 7'b1100111);
+    wire opcode_jal    = (Op == 7'b1101111);
 
- // i format
-   wire itype_l  = ~Op[6]&~Op[5]&~Op[4]&~Op[3]&~Op[2]&Op[1]&Op[0]; //0000011
+    wire i_add  = opcode_rtype && Funct3 == 3'b000 && Funct7 == 7'b0000000;
+    wire i_sub  = opcode_rtype && Funct3 == 3'b000 && Funct7 == 7'b0100000;
+    wire i_sll  = opcode_rtype && Funct3 == 3'b001 && Funct7 == 7'b0000000;
+    wire i_slt  = opcode_rtype && Funct3 == 3'b010 && Funct7 == 7'b0000000;
+    wire i_sltu = opcode_rtype && Funct3 == 3'b011 && Funct7 == 7'b0000000;
+    wire i_xor  = opcode_rtype && Funct3 == 3'b100 && Funct7 == 7'b0000000;
+    wire i_srl  = opcode_rtype && Funct3 == 3'b101 && Funct7 == 7'b0000000;
+    wire i_sra  = opcode_rtype && Funct3 == 3'b101 && Funct7 == 7'b0100000;
+    wire i_or   = opcode_rtype && Funct3 == 3'b110 && Funct7 == 7'b0000000;
+    wire i_and  = opcode_rtype && Funct3 == 3'b111 && Funct7 == 7'b0000000;
 
-// i format
-    wire itype_r  = ~Op[6]&~Op[5]&Op[4]&~Op[3]&~Op[2]&Op[1]&Op[0]; //0010011
-    wire i_addi  =  itype_r& ~Funct3[2]& ~Funct3[1]& ~Funct3[0]; // addi 000
-    wire i_ori  =  itype_r& Funct3[2]& Funct3[1]&~Funct3[0]; // ori 110
-	
- //jalr
-	wire i_jalr =Op[6]&Op[5]&~Op[4]&~Op[3]&Op[2]&Op[1]&Op[0];//jalr 1100111
+    wire i_addi  = opcode_itype && Funct3 == 3'b000;
+    wire i_slli  = opcode_itype && Funct3 == 3'b001 && Funct7 == 7'b0000000;
+    wire i_slti  = opcode_itype && Funct3 == 3'b010;
+    wire i_sltiu = opcode_itype && Funct3 == 3'b011;
+    wire i_xori  = opcode_itype && Funct3 == 3'b100;
+    wire i_srli  = opcode_itype && Funct3 == 3'b101 && Funct7 == 7'b0000000;
+    wire i_srai  = opcode_itype && Funct3 == 3'b101 && Funct7 == 7'b0100000;
+    wire i_ori   = opcode_itype && Funct3 == 3'b110;
+    wire i_andi  = opcode_itype && Funct3 == 3'b111;
 
-  // s format
-   wire stype  = ~Op[6]&Op[5]&~Op[4]&~Op[3]&~Op[2]&Op[1]&Op[0];//0100011
-   wire i_sw   =  stype& ~Funct3[2]& Funct3[1]&~Funct3[0]; // sw 010
+    wire i_lb  = opcode_load && Funct3 == 3'b000;
+    wire i_lh  = opcode_load && Funct3 == 3'b001;
+    wire i_lw  = opcode_load && Funct3 == 3'b010;
+    wire i_lbu = opcode_load && Funct3 == 3'b100;
+    wire i_lhu = opcode_load && Funct3 == 3'b101;
 
-  // sb format
-   wire sbtype  = Op[6]&Op[5]&~Op[4]&~Op[3]&~Op[2]&Op[1]&Op[0];//1100011
-   wire i_beq  = sbtype& ~Funct3[2]& ~Funct3[1]&~Funct3[0]; // beq
-	
- // j format
-   wire i_jal  = Op[6]& Op[5]&~Op[4]& Op[3]& Op[2]& Op[1]& Op[0];  // jal 1101111
+    wire i_sb = opcode_store && Funct3 == 3'b000;
+    wire i_sh = opcode_store && Funct3 == 3'b001;
+    wire i_sw = opcode_store && Funct3 == 3'b010;
 
-  // generate control signals
- assign RegWrite   = rtype | itype_r | i_jalr | i_jal; // register write
-  assign MemWrite   = stype;                           // memory write
-  assign ALUSrc     = itype_r | stype | i_jal | i_jalr;   // ALU B is from instruction immediate
+    wire i_beq  = opcode_branch && Funct3 == 3'b000;
+    wire i_bne  = opcode_branch && Funct3 == 3'b001;
+    wire i_blt  = opcode_branch && Funct3 == 3'b100;
+    wire i_bge  = opcode_branch && Funct3 == 3'b101;
+    wire i_bltu = opcode_branch && Funct3 == 3'b110;
+    wire i_bgeu = opcode_branch && Funct3 == 3'b111;
 
-  // signed extension
-  // EXT_CTRL_ITYPE_SHAMT 6'b100000
-  // EXT_CTRL_ITYPE	      6'b010000
-  // EXT_CTRL_STYPE	      6'b001000
-  // EXT_CTRL_BTYPE	      6'b000100
-  // EXT_CTRL_UTYPE	      6'b000010
-  // EXT_CTRL_JTYPE	      6'b000001
-  assign EXTOp[5] = 0;
-  //assign EXTOp[4]    =  i_ori | i_andi | i_jalr;
-  assign EXTOp[4]    =  i_ori;  
-  assign EXTOp[3]    = stype; 
-  assign EXTOp[2]    = sbtype; 
-  assign EXTOp[1]    = 0;   
-  assign EXTOp[0]    = i_jal;         
+    assign RegWrite = opcode_rtype | opcode_itype | opcode_load | opcode_lui |
+                      opcode_auipc | opcode_jal | opcode_jalr;
+    assign MemWrite = opcode_store;
+    assign ALUSrc   = opcode_itype | opcode_load | opcode_store |
+                      opcode_lui | opcode_auipc | opcode_jalr;
 
+    assign EXTOp = (i_slli | i_srli | i_srai) ? `EXT_CTRL_ITYPE_SHAMT :
+                   (opcode_itype | opcode_load | opcode_jalr) ? `EXT_CTRL_ITYPE :
+                   opcode_store ? `EXT_CTRL_STYPE :
+                   opcode_branch ? `EXT_CTRL_BTYPE :
+                   (opcode_lui | opcode_auipc) ? `EXT_CTRL_UTYPE :
+                   opcode_jal ? `EXT_CTRL_JTYPE :
+                   6'b000000;
 
-  
-  
-  // WDSel_FromALU 2'b00
-  // WDSel_FromMEM 2'b01
-  // WDSel_FromPC  2'b10 
-  assign WDSel[0] = itype_l;
-  assign WDSel[1] = i_jal | i_jalr;
+    assign WDSel = opcode_load ? `WDSel_FromMEM :
+                   (opcode_jal | opcode_jalr) ? `WDSel_FromPC :
+                   `WDSel_FromALU;
+    assign GPRSel = `GPRSel_RD;
 
-  // NPC_PLUS4   3'b000
-  // NPC_BRANCH  3'b001
-  // NPC_JUMP    3'b010
-  // NPC_JALR	3'b100
-  assign NPCOp[0] = sbtype & Zero;
-  assign NPCOp[1] = i_jal;
-	assign NPCOp[2]=i_jalr;
-  
+    assign NPCOp = (opcode_branch && Zero) ? `NPC_BRANCH :
+                   opcode_jal ? `NPC_JUMP :
+                   opcode_jalr ? `NPC_JALR :
+                   `NPC_PLUS4;
 
- 
-	assign ALUOp[0] = itype_l|stype|i_addi|i_ori|i_add|i_or;
-	assign ALUOp[1] = i_jalr|itype_l|stype|i_addi|i_add|i_and;
-	//assign ALUOp[2] = i_andi|i_and|i_ori|i_or|i_beq|i_sub;
-	//assign ALUOp[3] = i_andi|i_and|i_ori|i_or;
-	assign ALUOp[2] = i_and|i_ori|i_or|i_beq|i_sub;
-    assign ALUOp[3] = i_and|i_ori|i_or;    
-	assign ALUOp[4] = 0;
+    assign ALUOp = opcode_lui ? `ALUOp_lui :
+                   (opcode_auipc) ? `ALUOp_auipc :
+                   (i_sub | i_beq) ? `ALUOp_sub :
+                   (i_bne) ? `ALUOp_bne :
+                   (i_blt) ? `ALUOp_blt :
+                   (i_bge) ? `ALUOp_bge :
+                   (i_bltu) ? `ALUOp_bltu :
+                   (i_bgeu) ? `ALUOp_bgeu :
+                   (i_slt | i_slti) ? `ALUOp_slt :
+                   (i_sltu | i_sltiu) ? `ALUOp_sltu :
+                   (i_xor | i_xori) ? `ALUOp_xor :
+                   (i_or | i_ori) ? `ALUOp_or :
+                   (i_and | i_andi) ? `ALUOp_and :
+                   (i_sll | i_slli) ? `ALUOp_sll :
+                   (i_srl | i_srli) ? `ALUOp_srl :
+                   (i_sra | i_srai) ? `ALUOp_sra :
+                   (i_add | i_addi | opcode_load | opcode_store | opcode_jalr) ? `ALUOp_add :
+                   `ALUOp_nop;
 
+    assign DMType = (i_lh | i_sh) ? `dm_halfword :
+                    i_lhu ? `dm_halfword_unsigned :
+                    (i_lb | i_sb) ? `dm_byte :
+                    i_lbu ? `dm_byte_unsigned :
+                    `dm_word;
 endmodule

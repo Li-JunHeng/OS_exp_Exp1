@@ -1,3 +1,4 @@
+`timescale 1ns / 1ps
 `include "ctrl_encode_def.v"
 module SCPU(
     input      clk,            // clock
@@ -10,6 +11,7 @@ module SCPU(
       // memory write
     output [31:0] Addr_out,   // ALU output
     output [31:0] Data_out,// data to data memory
+    output [2:0] dm_ctrl,
 
     input  [4:0] reg_sel,    // register selection (for debug use)
     output [31:0] reg_data  // selected register data (for debug use)
@@ -72,7 +74,7 @@ assign Addr_out=aluout;
 		.Op(Op), .Funct7(Funct7), .Funct3(Funct3), .Zero(Zero), 
 		.RegWrite(RegWrite), .MemWrite(mem_w),
 		.EXTOp(EXTOp), .ALUOp(ALUOp), .NPCOp(NPCOp), 
-		.ALUSrc(ALUSrc), .GPRSel(GPRSel), .WDSel(WDSel)
+		.ALUSrc(ALUSrc), .GPRSel(GPRSel), .WDSel(WDSel), .DMType(dm_ctrl)
 	);
  // instantiation of pc unit
 	PC U_PC(.clk(clk), .rst(reset), .NPC(NPC), .PC(PC_out) );
@@ -87,9 +89,9 @@ assign Addr_out=aluout;
 		.RFWr(RegWrite), 
 		.A1(rs1), .A2(rs2), .A3(rd), 
 		.WD(WD), 
-		.RD1(RD1), .RD2(RD2)
-		//.reg_sel(reg_sel),
-		//.reg_data(reg_data)
+		.reg_sel(reg_sel),
+		.RD1(RD1), .RD2(RD2),
+		.reg_data(reg_data)
 	);
 // instantiation of alu unit
 	alu U_alu(.A(RD1), .B(B), .ALUOp(ALUOp), .C(aluout), .Zero(Zero), .PC(PC_out));
@@ -101,6 +103,7 @@ begin
 		`WDSel_FromALU: WD<=aluout;
 		`WDSel_FromMEM: WD<=Data_in;
 		`WDSel_FromPC: WD<=PC_out+4;
+		default: WD<=aluout;
 	endcase
 end
 

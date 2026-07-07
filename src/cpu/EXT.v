@@ -1,3 +1,4 @@
+`timescale 1ns / 1ps
 `include "ctrl_encode_def.v"
 module EXT( 
 	input [4:0] iimm_shamt,

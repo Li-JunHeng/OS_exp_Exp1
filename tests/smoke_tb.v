@@ -1,3 +1,5 @@
+`timescale 1ns / 1ps
+
 module smoke_tb();
    reg clk;
    reg rstn;
@@ -36,6 +38,7 @@ module smoke_tb();
       if (!$value$plusargs("PROGRAM_WORDS=%d", program_words))
          program_words = 15;
 
+      #1;
       $readmemh(program_path, U_SCCOMP.U_IM.ROM, 0, program_words - 1);
       foutput = $fopen(output_path, "w");
       if (foutput == 0) begin

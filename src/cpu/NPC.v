@@ -1,3 +1,4 @@
+`timescale 1ns / 1ps
 `include "ctrl_encode_def.v"
 
 module NPC(PC, NPCOp, IMM, NPC,aluout);  // next pc module
@@ -17,7 +18,7 @@ module NPC(PC, NPCOp, IMM, NPC,aluout);  // next pc module
           `NPC_PLUS4:  NPC = PCPLUS4;
           `NPC_BRANCH: NPC = PC+IMM;
           `NPC_JUMP:   NPC = PC+IMM;
-		  `NPC_JALR:	NPC =aluout;
+		  `NPC_JALR:	NPC ={aluout[31:1], 1'b0};
           default:     NPC = PCPLUS4;
       endcase
    end // end always

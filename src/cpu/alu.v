@@ -1,3 +1,4 @@
+`timescale 1ns / 1ps
 `include "ctrl_encode_def.v"
 
 module alu(A, B, ALUOp, C, Zero,PC);
@@ -9,7 +10,7 @@ module alu(A, B, ALUOp, C, Zero,PC);
    output Zero;
    
    reg [31:0] C;
-   integer    i;
+   wire [4:0] shamt = B[4:0];
        
    always @( * ) begin
       case ( ALUOp )
@@ -28,9 +29,10 @@ module alu(A, B, ALUOp, C, Zero,PC);
 `ALUOp_xor:C=A^B;
 `ALUOp_or:C=A|B;
 `ALUOp_and:C=A&B;
-`ALUOp_sll:C=A<<B;
-`ALUOp_srl:C=A>>B;
-`ALUOp_sra:C=A>>>B;
+`ALUOp_sll:C=A<<shamt;
+`ALUOp_srl:C=$unsigned(A)>>shamt;
+`ALUOp_sra:C=A>>>shamt;
+      default:C=32'b0;
       endcase
    end // end always
    

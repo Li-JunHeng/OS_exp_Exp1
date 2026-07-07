@@ -11,6 +11,7 @@ docs/           PDFs, PPTX, DOCX, schematic, and test screenshot.
 memory/         COE/DAT/TXT memory initialization and instruction files.
 scripts/        Local automation scripts.
 src/cpu/        Editable CPU Verilog source from code.rar.
+src/board/      Board-level top.v and inferred data RAM wrapper.
 src/io/         IO helper modules from IO.rar.
 src/ip/         EDF/IP wrapper modules from edf_file.rar.
 tests/          Icarus Verilog smoke tests and legacy examples.
@@ -23,7 +24,13 @@ tools/asm2coe/  Assembly-to-COE helper from asm2coe.zip.
 make test
 ```
 
-The test flow uses `iverilog` to compile `src/cpu/` and `vvp` to simulate it. The smoke case loads the 15 words in `tests/programs/rv32i_8_instr.dat`, stops at `PC=0x00000048`, dumps the register snapshot, and compares it with `tests/golden/rv32i_8_instr.txt`.
+The test flow uses `iverilog` to compile `src/cpu/` and `vvp` to simulate it. It runs both the original 8-instruction smoke case and the 37-instruction experiment case from `memory/Test_37_Instr8.dat`.
+
+```sh
+make top-syntax
+```
+
+This compiles the board-level `src/board/top.v` with the provided IO/IP stubs to catch Verilog syntax and port wiring errors before opening Vivado.
 
 ## Board Integration Notes
 
@@ -33,6 +40,8 @@ The test flow uses `iverilog` to compile `src/cpu/` and `vvp` to simulate it. Th
 - `constraints/icf.xdc` is the project-specific constraint file.
 - `docs/测试.png` is the expected board test behavior reference.
 - `src/io/` and `src/ip/` contain the provided IO and EDF submodules used when assembling the final `top.v`.
+- `src/board/top.v` is the board-level assembly file. It connects the completed CPU, instruction memory, data RAM, MIO bus, LED GPIO, counter, multi-channel display selector, and seven-segment display.
+- `scripts/vivado_sources.tcl` adds the intended Vivado source set. It deliberately excludes the provided `src/ip/SCPU.v`/`SCPU.edf` CPU black-box stub because this project uses the implemented `src/cpu/SCPU.v`.
 
 ## Add More Cases
 

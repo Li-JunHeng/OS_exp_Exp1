@@ -1,3 +1,4 @@
+`timescale 1ns / 1ps
 module PC( clk, rst, NPC, PC );
 
   input              clk;
@@ -13,4 +14,3 @@ module PC( clk, rst, NPC, PC );
       PC <= NPC;
       
 endmodule
-
