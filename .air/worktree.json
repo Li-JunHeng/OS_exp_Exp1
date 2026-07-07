@@ -1,0 +1,54 @@
+{
+    "environment": [
+        {
+            "type": "env",
+            "key": "HTTP_PROXY",
+            "value": "http://127.0.0.1:6064"
+        },
+        {
+            "type": "env",
+            "key": "HTTPS_PROXY",
+            "value": "http://127.0.0.1:6064"
+        },
+        {
+            "type": "env",
+            "key": "ALL_PROXY",
+            "value": "socks5://127.0.0.1:6064"
+        },
+        {
+            "type": "env",
+            "key": "NO_PROXY",
+            "value": "localhost,127.0.0.1,::1"
+        },
+        {
+            "type": "env",
+            "key": "http_proxy",
+            "value": "http://127.0.0.1:6064"
+        },
+        {
+            "type": "env",
+            "key": "https_proxy",
+            "value": "http://127.0.0.1:6064"
+        },
+        {
+            "type": "env",
+            "key": "all_proxy",
+            "value": "socks5://127.0.0.1:6064"
+        },
+        {
+            "type": "env",
+            "key": "no_proxy",
+            "value": "localhost,127.0.0.1,::1"
+        }
+    ],
+    "setup": {
+        "macos": [
+            "env | grep -i '_proxy=' > /tmp/air-proxy-env.txt"
+        ]
+    },
+    "cleanup": {
+        "macos": [
+            "rm -f /tmp/air-proxy-env.txt"
+        ]
+    }
+}
